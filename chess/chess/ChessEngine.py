@@ -14,9 +14,9 @@ class GameState():
         # b/w: black/white; second letter is the piece type
         self.board = np.array([
             ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
-            ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "**"],
+            ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
             ["**", "**", "**", "**", "**", "**", "**", "**"],
-            ["**", "**", "**", "**", "**", "**", "**", "**"],
+            ["**", "**", "**", "wQ", "**", "**", "**", "**"],
             ["**", "**", "**", "**", "**", "**", "**", "**"],
             ["**", "**", "**", "**", "**", "**", "**", "**"],
             ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
@@ -60,6 +60,12 @@ class GameState():
                         self.get_pawn_moves(r, c, moves)
                     elif piece == 'R':
                         self.get_rook_moves(r, c, moves)
+                    elif piece == 'N':
+                        self.get_knight_moves(r, c, moves)
+                    elif piece == 'B':
+                        self.get_bishop_moves(r, c, moves)
+                    elif piece == 'Q':
+                        self.get_queen_moves(r, c, moves)
                         ''' 
                     elif piece == 'Q':
                     elif piece == 'K':
@@ -108,118 +114,96 @@ class GameState():
                     moves.append(Move((r, c), (r + 1, c - 1), self.board))
 
     # get all possible moves for the rook located at r and c and add them to the list
+    #IMPROVE DESIGN WHEN YOU CAN (MAYBE CREATE A SINGLE FUNCTION THAT GETS PASSED A LIST OF DIRECTIONS DEPENDING ON THE PIECE)
     def get_rook_moves(self, r, c, moves):
-        if self.white_to_move: #white to move
+        if self.white_to_move:
+            friend = 'w'
+            enemy = 'b'
+        else:
+            friend = 'b'
+            enemy = 'w'
 
-            #forward movements
-            fw = 1
-            while r - fw >= 0 :
-                if self.board[r-fw][c] == "**": # empty square
-                    moves.append(Move((r,c),(r-fw, c), self.board))
-                    fw += 1
-                    continue
-                elif self.board[r-fw][c][0] == 'w': # square occupied by same coloured piece
-                    break
-                elif self.board[r-fw][c][0] == 'b':  # square occupied by enemy piece
-                    moves.append(Move((r,c),(r-fw,c),self.board))
-                    break
-
-            #backward movements
-            bw = 1
-            while r + bw <= 7:
-                if self.board[r + bw][c] == "**":  # empty square
-                    moves.append(Move((r, c), (r + bw, c), self.board))
-                    bw += 1
-                    continue
-                elif self.board[r - bw][c][0] == 'w':  # square occupied by same coloured piece
-                    break
-                elif self.board[r - bw][c][0] == 'b':  # square occupied by enemy piece
-                    moves.append(Move((r, c), (r + bw, c), self.board))
-                    break
-
-            # left movements
-            lw = 1
-            while c - lw >= 0:
-                if self.board[r][c - lw] == "**":  # empty square
-                    moves.append(Move((r, c), (r, c-lw), self.board))
-                    lw += 1
-                    continue
-                elif self.board[r][c-lw][0] == 'w':  # square occupied by same coloured piece
-                    break
-                elif self.board[r][c-lw][0] == 'b':  # square occupied by enemy piece
-                    moves.append(Move((r, c), (r, c-lw), self.board))
-                    break
-
-            # right movements
-            rightw = 1
-            while c + rightw <= 7:
-                if self.board[r][c + rightw] == "**":  # empty square
-                    moves.append(Move((r, c), (r, c + rightw), self.board))
-                    rightw += 1
-                    continue
-                elif self.board[r][c + rightw][0] == 'w':  # square occupied by same coloured piece
-                    break
-                elif self.board[r][c + rightw][0] == 'b':  # square occupied by enemy piece
-                    moves.append(Move((r, c), (r, c + rightw), self.board))
-                    break
-
-        '''
-                else: #black to move
-
-            # forward movements
-            fb = 1
-            while r + fb <= 7:
-                if self.board[r + fb][c] == "**":  # empty square
-                    moves.append(Move((r, c), (r + fb, c), self.board))
-                    fb += 1
-                    continue
-                elif self.board[r - fb][c][0] == 'b':  # square occupied by same coloured piece
-                    break
-                elif self.board[r - fb][c][0] == 'w':  # square occupied by enemy piece
-                    moves.append(Move((r, c), (r + fb, c), self.board))
-                    break
-
-            # backward movements
-            bb = 1
-            while r - bb >= 0 :
-                if self.board[r-bb][c] == "**": # empty square
-                    moves.append(Move((r,c),(r-bb, c), self.board))
-                    bb += 1
-                    continue
-                elif self.board[r-bb][c][0] == 'b': # square occupied by same coloured piece
-                    break
-                elif self.board[r-bb][c][0] == 'w':  # square occupied by enemy piece
-                    moves.append(Move((r,c),(r-bb,c),self.board))
-                    break
-
-            # left movements
-            lb = 1
-            while c - lb >= 0:
-                if self.board[r][c - lb] == "**":  # empty square
-                    moves.append(Move((r, c), (r, c-lb), self.board))
-                    lb += 1
-                    continue
-                elif self.board[r][c-lb][0] == 'b':  # square occupied by same coloured piece
-                    break
-                elif self.board[r][c-lb][0] == 'w':  # square occupied by enemy piece
-                    moves.append(Move((r, c), (r, c-lb), self.board))
-                    break
-
-            # right movements
-            rightb = 1
-            while c + rightb <= 7:
-                if self.board[r][c + rightb] == "**":  # empty square
-                    moves.append(Move((r, c), (r, c + rightb), self.board))
-                    rightb += 1
-                    continue
-                elif self.board[r][c + rightb][0] == 'b':  # square occupied by same coloured piece
-                    break
-                elif self.board[r][c + rightb][0] == 'w':  # square occupied by enemy piece
-                    moves.append(Move((r, c), (r, c + rightb), self.board))
-                    break
-        '''
+        directions = ((-1, 0), (1, 0), (0, -1), (0, 1)) # top, bottom, left, right
+        for d in directions:
+            for i in range(1,8):
+                final_row = r + (i * d[0])
+                final_column = c + (i * d[1])
+                if 0 <= final_row <= 7 and 0 <= final_column <= 7:
+                    if self.board[final_row][final_column] == "**":  # empty square
+                        moves.append(Move((r, c), (final_row, final_column), self.board))
+                        continue
+                    elif self.board[final_row][final_column][0] == enemy:  # square occupied by enemy piece
+                        moves.append(Move((r, c), (final_row, final_column), self.board))
+                        break
+                    elif self.board[final_row][final_column][0] == friend:  # square occupied by friendly piece
+                        break
 
 
+    # get all possible moves for the knight located at r and c and add them to the list
+    def get_knight_moves(self, r, c, moves):
+        if self.white_to_move:
+            friend = 'w'
+            enemy = 'b'
+        else:
+            friend = 'b'
+            enemy = 'w'
+
+        directions = ((-2, -1), (-2, 1), (2, -1), (2, 1), (-1, -2), (1, -2), (-1, 2), (1, 2))  # top, bottom, left, right
+        for d in directions:
+                final_row = r + d[0]
+                final_column = c + d[1]
+                if 0 <= final_row <= 7 and 0 <= final_column <= 7:
+                    if self.board[final_row][final_column] == "**" or self.board[final_row][final_column] == enemy:  # empty or enemy occupied square
+                        moves.append(Move((r, c), (final_row, final_column), self.board))
+                    elif self.board[final_row][final_column][0] == friend:  # square occupied by friendly piece
+                        continue
+
+    # get all possible moves for the bishop located at r and c and add them to the list
+    def get_bishop_moves(self, r, c, moves):
+        if self.white_to_move:
+            friend = 'w'
+            enemy = 'b'
+        else:
+            friend = 'b'
+            enemy = 'w'
+
+        directions = ((-1, -1), (-1, 1), (1, -1), (1, 1)) # top-left, top-right, bottom-left, bottom-right
+        for d in directions:
+            for i in range(1,8):
+                final_row = r + (i * d[0])
+                final_column = c + (i * d[1])
+                if 0 <= final_row <= 7 and 0 <= final_column <= 7:
+                    if self.board[final_row][final_column] == "**":  # empty square
+                        moves.append(Move((r, c), (final_row, final_column), self.board))
+                        continue
+                    elif self.board[final_row][final_column][0] == enemy:  # square occupied by enemy piece
+                        moves.append(Move((r, c), (final_row, final_column), self.board))
+                        break
+                    elif self.board[final_row][final_column][0] == friend:  # square occupied by friendly piece
+                        break
+
+    def get_king_moves(self, r, c, moves):
+        if self.white_to_move:
+            friend = 'w'
+            enemy = 'b'
+        else:
+            friend = 'b'
+            enemy = 'w'
+
+        directions = ((-1, -1), (-1, 0), (-1, 1), (0, 1), (0, -1), (1, -1), (1, 0), (1, 1))  # top, bottom, left, right
+        for d in directions:
+                final_row = r + d[0]
+                final_column = c + d[1]
+                if 0 <= final_row <= 7 and 0 <= final_column <= 7:
+                    if self.board[final_row][final_column] == "**" or self.board[final_row][final_column] == enemy:  # empty or enemy occupied square
+                        moves.append(Move((r, c), (final_row, final_column), self.board))
+                    elif self.board[final_row][final_column][0] == friend:  # square occupied by friendly piece
+                        continue
+
+    # get all possible moves for the queen located at r and c and add them to the list
+    def get_queen_moves(self, r, c, moves):
+        self.get_rook_moves(r,c,moves)
+        self.get_bishop_moves(r, c, moves)
 
 class Move():
 
