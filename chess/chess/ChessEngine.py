@@ -14,7 +14,7 @@ class GameState():
         # b/w: black/white; second letter is the piece type
         self.board = np.array([
             ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
-            ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
+            ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "**"],
             ["**", "**", "**", "**", "**", "**", "**", "**"],
             ["**", "**", "**", "**", "**", "**", "**", "**"],
             ["**", "**", "**", "**", "**", "**", "**", "**"],
@@ -48,18 +48,18 @@ class GameState():
     #all moves without considering checks
     def get_all_possible_moves(self):
         #all the moves will be added to this list
-        moves = [Move((6,4), (4,4), self.board)]
+        moves = []
         for r in range(len(self.board)):
             for c in range(len(self.board[r])):
                 #accessing the first character of a given square on the board (b, w or *)
                 turn = self.board[r][c][0]
-                if (turn == 'w' and self.white_to_move) and (turn == 'b' and not self.white_to_move):
+                if (turn == 'w' and self.white_to_move) or (turn == 'b' and not self.white_to_move):
                     #accessing piece type
                     piece = self.board[r][c][1]
                     if piece == 'p':
                         self.get_pawn_moves(r, c, moves)
                     elif piece == 'R':
-                        self.get_pawn_moves(r, c, moves)
+                        self.get_rook_moves(r, c, moves)
                         ''' 
                     elif piece == 'Q':
                     elif piece == 'K':
@@ -70,11 +70,155 @@ class GameState():
 
     #get all possible moves for the pawn located at r and c and add them to the list
     def get_pawn_moves(self, r, c, moves):
-        pass
+        if self.white_to_move: #white to move
+            #forward movements
+            if self.board[r-1][c] == "**": #1 square pawn advance
+                moves.append(Move((r,c),(r-1, c), self.board))
+                if r == 6 and self.board[r-2][c] == "**": #2 square pawn advance
+                    moves.append(Move((r,c),(r-2,c),self.board))
+            #diagonal movements
+            if 0 < c < 7: #if the piece isn't one of the edge pieces
+                if self.board[r-1][c-1][0] == 'b': #enemy piece to capture (black)
+                    moves.append(Move((r,c),(r-1,c-1),self.board))
+                if self.board[r-1][c+1][0] == 'b':
+                    moves.append(Move((r,c),(r-1,c+1),self.board))
+            if c == 0: #the leftmost piece
+                if self.board[r-1][c+1][0] == 'b':
+                    moves.append(Move((r,c),(r-1,c+1),self.board))
+            if c >= 7: #the rightmost piece
+                if self.board[r-1][c-1][0] == 'b':
+                    moves.append(Move((r,c),(r-1,c-1),self.board))
+        else: #black to move
+            # forward movements
+            if self.board[r + 1][c] == "**":  # 1 square pawn advance
+                moves.append(Move((r, c), (r + 1, c), self.board))
+                if r == 1 and self.board[r + 2][c] == "**":  # 2 square pawn advance
+                    moves.append(Move((r, c), (r + 2, c), self.board))
+            # diagonal movements
+            if 0 < c < 7:  # if the piece isn't one of the edge pieces
+                if self.board[r + 1][c - 1][0] == 'w':  # enemy piece to capture (white)
+                    moves.append(Move((r, c), (r + 1, c - 1), self.board))
+                if self.board[r + 1][c + 1][0] == 'w':
+                    moves.append(Move((r, c), (r + 1, c + 1), self.board))
+            if c == 0:  # the leftmost piece
+                if self.board[r + 1][c + 1][0] == 'w':
+                    moves.append(Move((r, c), (r + 1, c + 1), self.board))
+            if c >= 7:  # the rightmost piece
+                if self.board[r + 1][c - 1][0] == 'w':
+                    moves.append(Move((r, c), (r + 1, c - 1), self.board))
 
     # get all possible moves for the rook located at r and c and add them to the list
     def get_rook_moves(self, r, c, moves):
-        pass
+        if self.white_to_move: #white to move
+
+            #forward movements
+            fw = 1
+            while r - fw >= 0 :
+                if self.board[r-fw][c] == "**": # empty square
+                    moves.append(Move((r,c),(r-fw, c), self.board))
+                    fw += 1
+                    continue
+                elif self.board[r-fw][c][0] == 'w': # square occupied by same coloured piece
+                    break
+                elif self.board[r-fw][c][0] == 'b':  # square occupied by enemy piece
+                    moves.append(Move((r,c),(r-fw,c),self.board))
+                    break
+
+            #backward movements
+            bw = 1
+            while r + bw <= 7:
+                if self.board[r + bw][c] == "**":  # empty square
+                    moves.append(Move((r, c), (r + bw, c), self.board))
+                    bw += 1
+                    continue
+                elif self.board[r - bw][c][0] == 'w':  # square occupied by same coloured piece
+                    break
+                elif self.board[r - bw][c][0] == 'b':  # square occupied by enemy piece
+                    moves.append(Move((r, c), (r + bw, c), self.board))
+                    break
+
+            # left movements
+            lw = 1
+            while c - lw >= 0:
+                if self.board[r][c - lw] == "**":  # empty square
+                    moves.append(Move((r, c), (r, c-lw), self.board))
+                    lw += 1
+                    continue
+                elif self.board[r][c-lw][0] == 'w':  # square occupied by same coloured piece
+                    break
+                elif self.board[r][c-lw][0] == 'b':  # square occupied by enemy piece
+                    moves.append(Move((r, c), (r, c-lw), self.board))
+                    break
+
+            # right movements
+            rightw = 1
+            while c + rightw <= 7:
+                if self.board[r][c + rightw] == "**":  # empty square
+                    moves.append(Move((r, c), (r, c + rightw), self.board))
+                    rightw += 1
+                    continue
+                elif self.board[r][c + rightw][0] == 'w':  # square occupied by same coloured piece
+                    break
+                elif self.board[r][c + rightw][0] == 'b':  # square occupied by enemy piece
+                    moves.append(Move((r, c), (r, c + rightw), self.board))
+                    break
+
+        '''
+                else: #black to move
+
+            # forward movements
+            fb = 1
+            while r + fb <= 7:
+                if self.board[r + fb][c] == "**":  # empty square
+                    moves.append(Move((r, c), (r + fb, c), self.board))
+                    fb += 1
+                    continue
+                elif self.board[r - fb][c][0] == 'b':  # square occupied by same coloured piece
+                    break
+                elif self.board[r - fb][c][0] == 'w':  # square occupied by enemy piece
+                    moves.append(Move((r, c), (r + fb, c), self.board))
+                    break
+
+            # backward movements
+            bb = 1
+            while r - bb >= 0 :
+                if self.board[r-bb][c] == "**": # empty square
+                    moves.append(Move((r,c),(r-bb, c), self.board))
+                    bb += 1
+                    continue
+                elif self.board[r-bb][c][0] == 'b': # square occupied by same coloured piece
+                    break
+                elif self.board[r-bb][c][0] == 'w':  # square occupied by enemy piece
+                    moves.append(Move((r,c),(r-bb,c),self.board))
+                    break
+
+            # left movements
+            lb = 1
+            while c - lb >= 0:
+                if self.board[r][c - lb] == "**":  # empty square
+                    moves.append(Move((r, c), (r, c-lb), self.board))
+                    lb += 1
+                    continue
+                elif self.board[r][c-lb][0] == 'b':  # square occupied by same coloured piece
+                    break
+                elif self.board[r][c-lb][0] == 'w':  # square occupied by enemy piece
+                    moves.append(Move((r, c), (r, c-lb), self.board))
+                    break
+
+            # right movements
+            rightb = 1
+            while c + rightb <= 7:
+                if self.board[r][c + rightb] == "**":  # empty square
+                    moves.append(Move((r, c), (r, c + rightb), self.board))
+                    rightb += 1
+                    continue
+                elif self.board[r][c + rightb][0] == 'b':  # square occupied by same coloured piece
+                    break
+                elif self.board[r][c + rightb][0] == 'w':  # square occupied by enemy piece
+                    moves.append(Move((r, c), (r, c + rightb), self.board))
+                    break
+        '''
+
 
 
 class Move():

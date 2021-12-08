@@ -1,6 +1,6 @@
 # User input & game state
-import pygame as p
 from chess import ChessEngine
+import pygame as p
 
 # Initializing pygame
 p.init()
