@@ -16,9 +16,9 @@ class GameState():
             ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
             ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
             ["**", "**", "**", "**", "**", "**", "**", "**"],
-            ["**", "**", "**", "**", "**", "**", "**", "**"],
-            ["**", "**", "**", "**", "**", "**", "**", "**"],
-            ["**", "**", "**", "**", "**", "**", "**", "**"],
+            ["**", "**", "**", "bp", "**", "**", "**", "**"],
+            ["**", "**", "**", "wK", "**", "**", "**", "**"],
+            ["**", "**", "**", "bp", "**", "**", "**", "**"],
             ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
         ])
@@ -204,7 +204,7 @@ class GameState():
                 final_row = r + d[0]
                 final_column = c + d[1]
                 if 0 <= final_row <= 7 and 0 <= final_column <= 7:
-                    if self.board[final_row][final_column] == "**" or self.board[final_row][final_column] == enemy:  # empty or enemy occupied square
+                    if self.board[final_row][final_column] == "**" or self.board[final_row][final_column][0] == enemy:  # empty or enemy occupied square
                         moves.append(Move((r, c), (final_row, final_column), self.board))
                     elif self.board[final_row][final_column][0] == friend:  # square occupied by friendly piece
                         continue
@@ -247,7 +247,7 @@ class GameState():
                 final_row = r + d[0]
                 final_column = c + d[1]
                 if 0 <= final_row <= 7 and 0 <= final_column <= 7:
-                    if self.board[final_row][final_column] == "**" or self.board[final_row][final_column] == enemy:  # empty or enemy occupied square
+                    if self.board[final_row][final_column] == "**" or self.board[final_row][final_column][0] == enemy:  # empty or enemy occupied square
                         moves.append(Move((r, c), (final_row, final_column), self.board))
                     elif self.board[final_row][final_column][0] == friend:  # square occupied by friendly piece
                         continue

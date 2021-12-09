@@ -146,7 +146,7 @@ def draw_game_state(screen, game_state, valid_moves, sq_selected):
 def draw_board(screen):
     # due to the n*n structure of the board and the fact that the top left square is always light then when row+column/2 is even, its a white square
     #creating a list of two colors so its indices can be used to determine position of square on the board
-    colors = [p.Color("white"), p.Color("pink")]
+    colors = [p.Color("white"), p.Color("lavender")]
 
     for row in range(DIMENSION):
         for column in range(DIMENSION):
