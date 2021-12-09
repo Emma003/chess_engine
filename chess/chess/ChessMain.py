@@ -35,15 +35,11 @@ def main():
 
     #storing valid moves in the current game state in a list
     valid_moves = game_state.get_valid_moves()
-
     #flag variable for when a move is made (to make sure the valid moves are only checked AFTER the usesr played a valid move, and not after any move the user makes)
     move_made = False
-
     load_images()
-
     #tuple (row,col) that will store the location of the selected square (empty for now)
     sq_selected = ()
-
     #list that keeps track of player clicks (using two tuples for 1st and 2nd click coordinates : [(6,4), (5,4)])
     player_clicks = []
 
@@ -52,7 +48,6 @@ def main():
         for e in p.event.get():
             if e.type == p.QUIT:
                 running = False
-
             #mouse handler
             elif e.type == p.MOUSEBUTTONDOWN:
                 location = p.mouse.get_pos() #returns (x,y) position of the mouse into a list
@@ -71,12 +66,13 @@ def main():
                 if len(player_clicks) == 2: #if its the player's 2nd click, we need to move the piece
                     move = ChessEngine.Move(player_clicks[0], player_clicks[1], game_state.board)
                     print(move.get_chess_notation())
-                    if move in valid_moves:
-                        game_state.make_move(move)
-                        move_made = True
-                        sq_selected = ()  # reset user clicks
-                        player_clicks = []
-                    else:
+                    for i in range(len(valid_moves)): #iterating through the valid moves to see if player's move is in it
+                        if move == valid_moves[i]:
+                            game_state.make_move(valid_moves[i])
+                            move_made = True
+                            sq_selected = ()  # reset user clicks
+                            player_clicks = []
+                    if not move_made:
                         player_clicks = [sq_selected]
 
             elif e.type == p.KEYDOWN:
@@ -88,23 +84,46 @@ def main():
             valid_moves = game_state.get_valid_moves()
             move_made = False
 
-        draw_game_state(screen, game_state)
+        draw_game_state(screen, game_state, valid_moves, sq_selected)
         clock.tick(MAX_FPS)
         p.display.flip()
     p.quit()
 
+#highlights square selected and moves for piece selected
+def highlight_square(screen, game_state, valid_moves, square_selected):
+    if square_selected != ():
+        r, c = square_selected
+        if game_state.board[r][c][0] == ('w' if game_state.white_to_move else 'b'): #if its white's turn to move, set gs.board[r][c][0] to 'w', otherwise set it to 'b'
+            #highlight selected square
+            s = p.Surface((SQUARE_SIZE, SQUARE_SIZE))
+            s.set_alpha(100) #the higher the value is (0-255), the more opaque
+            s.fill(p.Color('gray'))
+            screen.blit(s, (c*SQUARE_SIZE, r*SQUARE_SIZE))
+
+            #draw circle on valid moves squares
+            s.fill(p.Color('yellow'))
+            for move in valid_moves:
+                if move.start_row == r and move.start_col == c:
+                    if game_state.board[move.end_row][move.end_col][0] == ('b' if game_state.white_to_move else 'w'): #if the square has an enemy piece
+                        screen.blit(s, (move.end_col * SQUARE_SIZE, move.end_row * SQUARE_SIZE))
+                    else: #if the square is empty
+                        p.draw.circle(screen,'yellow', ((move.end_col * SQUARE_SIZE + 33), (move.end_row * SQUARE_SIZE + 33)), 10)
+
+
 
 #handles all graphics in the current game state
-def draw_game_state(screen, game_state):
+def draw_game_state(screen, game_state, valid_moves, sq_selected):
     draw_board(screen)
+    highlight_square(screen, game_state, valid_moves, sq_selected)
     draw_pieces(screen, game_state.board)
+
 
 
 #draws squares on the board (before drawing the pieces)
 def draw_board(screen):
     # due to the n*n structure of the board and the fact that the top left square is always light then when row+column/2 is even, its a white square
     #creating a list of two colors so its indices can be used to determine position of square on the board
-    colors = [p.Color("gray"), p.Color(" dark green")]
+    colors = [p.Color("white"), p.Color("pink")]
 
     for row in range(DIMENSION):
         for column in range(DIMENSION):

@@ -16,7 +16,7 @@ class GameState():
             ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
             ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
             ["**", "**", "**", "**", "**", "**", "**", "**"],
-            ["**", "**", "**", "wQ", "**", "**", "**", "**"],
+            ["**", "**", "**", "**", "**", "**", "wp", "wp"],
             ["**", "**", "**", "**", "**", "**", "**", "**"],
             ["**", "**", "**", "**", "**", "**", "**", "**"],
             ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
@@ -25,6 +25,10 @@ class GameState():
 
         self.white_to_move = True
         self.move_log = []
+        self.white_king_location = (7,4)
+        self.black_king_location = (0,4)
+        self.stale_mate = False
+        self.check_mate = False
 
     # takes a move as parameter and executes it (doesn't work for castling, en-passant and pawn-promotion
     def make_move(self, move):
@@ -32,6 +36,16 @@ class GameState():
         self.board[move.end_row][move.end_col] = move.piece_moved
         self.move_log.append(move) # records move so it can be undone
         self.white_to_move = not self.white_to_move # swaps players
+
+        #updating the king's location to check for checkmate
+        if move.piece_moved == 'wK':
+            self.white_king_location = (move.end_row, move.end_col)
+        elif move.piece_moved == 'bK':
+            self.black_king_location = (move.end_row), (move.end_col)
+
+        #checking for pawn promotion
+        if move.is_pawn_promotion:
+            self.board[move.end_row][move.end_col] = move.piece_moved[0] + 'Q'
 
     #undoes last move
     def undo_move(self):
@@ -41,9 +55,50 @@ class GameState():
             self.board[move.end_row][move.end_col] = move.piece_captured
             self.white_to_move = not self.white_to_move #switch turns back
 
-    #all moves considering checks
+            # updating the king's location
+            if move.piece_moved == 'wK':
+                self.white_king_location = (move.start_row, move.start_col)
+            elif move.piece_moved == 'bK':
+                self.black_king_location = (move.start_row), (move.start_col)
+
+    # all moves considering checks (naive algorithm)
     def get_valid_moves(self):
-        return self.get_all_possible_moves()
+        # generate all friendly moves (going backwards to prevent a bug)
+        moves = self.get_all_possible_moves()
+        for i in range(len(moves)-1, -1, -1):
+            self.make_move(moves[i]) # every make move fct switches turns so we need to switch it back
+            self.white_to_move = not self.white_to_move  # switch turn
+            if self.in_check(): # for each of enemy moves, see if friendly king is attacked
+                moves.remove(moves[i]) # if so, not a valid move
+            self.white_to_move = not self.white_to_move  # switch turn back
+            self.undo_move()
+        if len(moves) == 0:
+            if self.in_check():
+                self.check_mate = True
+            else:
+                self.stale_mate = True
+        else:
+            self.check_mate = False
+            self.stale_mate = False
+        return moves
+
+    # determines if current player is in check
+    def in_check(self):
+        if self.white_to_move:
+            return self.under_attack(self.white_king_location[0], self.white_king_location[1])
+        else:
+            return self.under_attack(self.black_king_location[0], self.black_king_location[1])
+
+    # determines if the enemy can attack the square r,c
+    def under_attack(self,r,c):
+        self.white_to_move = not self.white_to_move # switch pov to generate opponent's moves
+        opponent_moves = self.get_all_possible_moves()
+        for move in opponent_moves:
+            if move.end_row == r and move.end_col == c: # if square is under attack
+                self.white_to_move = not self.white_to_move # switch pov back
+                return True
+        self.white_to_move = not self.white_to_move  # switch pov back
+        return False
 
     #all moves without considering checks
     def get_all_possible_moves(self):
@@ -66,12 +121,8 @@ class GameState():
                         self.get_bishop_moves(r, c, moves)
                     elif piece == 'Q':
                         self.get_queen_moves(r, c, moves)
-                        ''' 
-                    elif piece == 'Q':
                     elif piece == 'K':
-                    elif piece == 'B':
-                    elif piece == 'N':
-                        '''
+                        self.get_king_moves(r, c, moves)
         return moves
 
     #get all possible moves for the pawn located at r and c and add them to the list
@@ -182,6 +233,7 @@ class GameState():
                     elif self.board[final_row][final_column][0] == friend:  # square occupied by friendly piece
                         break
 
+    # get all possible moves for the king located at r and c and add them to the list
     def get_king_moves(self, r, c, moves):
         if self.white_to_move:
             friend = 'w'
@@ -207,15 +259,6 @@ class GameState():
 
 class Move():
 
-    # translating the 2d array to ranks and files (chess notation) using dictionaries
-    ranks_to_rows = {"1": 7, "2": 6, "3": 5, "4": 4,
-                     "5": 3, "6": 2, "7": 1, "8": 0}
-    rows_to_ranks = {v:k for k, v in ranks_to_rows.items()}
-
-    files_to_cols = {"a": 0, "b": 1, "c": 2, "d": 3,
-                     "e": 4, "f": 5, "g": 6, "h": 7}
-    cols_to_files = {v: k for k, v in files_to_cols.items()}
-
     # passing the board as a parameter so the info about piece moves can be stored (easier to undo moves)
     def __init__(self, start_square, end_square, board):
         self.start_row = start_square[0]
@@ -224,10 +267,13 @@ class Move():
         self.end_col = end_square[1]
         self.piece_moved = board[self.start_row][self.start_col]
         self.piece_captured = board[self.end_row][self.end_col]
+        self.is_pawn_promotion = False
+        if (self.piece_moved == 'wp' and self.end_row == 0) or (self.piece_moved == 'bp' and self.end_row == 7):
+            self.is_pawn_promotion = True
         #giving a unique move id parameter that is going to be used for comparison (similar to a hash code)
         #the move id will be a unique value from 0-7777
         self.move_id = self.start_row * 1000 + self.start_col * 100 + self.end_row * 10 + self.end_col
-        print(self.move_id)
+
 
     #overrides equals method for comparing moves
     def __eq__(self, other):
@@ -235,6 +281,14 @@ class Move():
            return self.move_id == other.move_id
         return False
 
+    # translating the 2d array to ranks and files (chess notation) using dictionaries
+    ranks_to_rows = {"1": 7, "2": 6, "3": 5, "4": 4,
+                     "5": 3, "6": 2, "7": 1, "8": 0}
+    rows_to_ranks = {v: k for k, v in ranks_to_rows.items()}
+
+    files_to_cols = {"a": 0, "b": 1, "c": 2, "d": 3,
+                     "e": 4, "f": 5, "g": 6, "h": 7}
+    cols_to_files = {v: k for k, v in files_to_cols.items()}
 
     # returns rank-file notation for the move (start-end pair)
     def get_chess_notation(self):
