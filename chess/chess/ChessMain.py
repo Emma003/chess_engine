@@ -1,5 +1,6 @@
 # User input & game state
 from chess import ChessEngine
+from chess import ChessAI
 import pygame as p
 
 # Initializing pygame
@@ -33,66 +34,83 @@ def main():
     screen.fill(p.Color("white"))
     game_state = ChessEngine.GameState()
 
-    #storing valid moves in the current game state in a list
+    # storing valid moves in the current game state in a list
     valid_moves = game_state.get_valid_moves()
-    #flag variable for when a move is made (to make sure the valid moves are only checked AFTER the usesr played a valid move, and not after any move the user makes)
+    # flag variable for when a move is made (to make sure the valid moves are only checked AFTER the usesr played a valid move, and not after any move the user makes)
     move_made = False
     load_images()
-    #tuple (row,col) that will store the location of the selected square (empty for now)
+    # tuple (row,col) that will store the location of the selected square (empty for now)
     sq_selected = ()
-    #list that keeps track of player clicks (using two tuples for 1st and 2nd click coordinates : [(6,4), (5,4)])
+    # list that keeps track of player clicks (using two tuples for 1st and 2nd click coordinates : [(6,4), (5,4)])
     player_clicks = []
     game_over = False
+    human_vs_cpu = False # true when human vs ai mode, false when multiplayer mode
+    player_human = True # true if human is playing white and ai is playing black
+    player_easy_ai = False # true if human is playing black and easy ai is playing white
+    player_difficult_ai = False # true if human is playing black and difficult ai is playing white
 
     running = True
     while running:
+        is_human_turn = (game_state.white_to_move and player_human) or (not game_state.white_to_move and player_easy_ai) # true if its white's turn to move AND human is white
+        # OR if its black's turn to play and human is black
+
         for e in p.event.get():
             if e.type == p.QUIT:
                 running = False
-            #mouse handler
+            # mouse handler
             elif e.type == p.MOUSEBUTTONDOWN:
-                if not game_over:
-                    location = p.mouse.get_pos() #returns (x,y) position of the mouse into a list
-                    #for side panel make sure to keep track of the mouse location being relative to the new boundaries
+                if not human_vs_cpu or (human_vs_cpu and is_human_turn):
+                    if not game_over: # and is_human_turn and human_vs_cpu:
+                        location = p.mouse.get_pos() # returns (x,y) position of the mouse into a list
+                        # for side panel make sure to keep track of the mouse location being relative to the new boundaries
 
-                    #column and row number
-                    col = location[0]//SQUARE_SIZE
-                    row = location[1]//SQUARE_SIZE
-                    if sq_selected == (row,col): #if the user clicked same square twice
-                        sq_selected = () #deselect
-                        player_clicks = [] #clear player clicks
-                    else:
-                        sq_selected = (row, col)
-                        player_clicks.append(sq_selected) #add both first and second clicks
+                        # column and row number
+                        col = location[0]//SQUARE_SIZE
+                        row = location[1]//SQUARE_SIZE
+                        if sq_selected == (row,col): # if the user clicked same square twice
+                            sq_selected = () # deselect
+                            player_clicks = [] # clear player clicks
+                        else:
+                            sq_selected = (row, col)
+                            player_clicks.append(sq_selected) # add both first and second clicks
 
-                    if len(player_clicks) == 2: #if its the player's 2nd click, we need to move the piece
-                        move = ChessEngine.Move(player_clicks[0], player_clicks[1], game_state.board)
-                        print(move.get_chess_notation())
-                        for i in range(len(valid_moves)): #iterating through the valid moves to see if player's move is in it
-                            if move == valid_moves[i]:
-                                game_state.make_move(valid_moves[i])
-                                move_made = True
-                                sq_selected = ()  # reset user clicks
-                                player_clicks = []
-                        if not move_made:
-                            player_clicks = [sq_selected]
-            #key handlers
+                        if len(player_clicks) == 2: # if its the player's 2nd click, we need to move the piece
+                            move = ChessEngine.Move(player_clicks[0], player_clicks[1], game_state.board)
+                            print(move.get_chess_notation())
+                            for i in range(len(valid_moves)): # iterating through the valid moves to see if player's move is in it
+                                if move == valid_moves[i]:
+                                    game_state.make_move(valid_moves[i])
+                                    move_made = True
+                                    sq_selected = ()  # reset user clicks
+                                    player_clicks = []
+                            if not move_made:
+                                player_clicks = [sq_selected]
+            # key handlers
             elif e.type == p.KEYDOWN:
-                if e.key == p.K_z: #undo when 'z' is pressed
+                if e.key == p.K_c: # press c to play vs computer
+                    human_vs_cpu = True
+                if e.key == p.K_z: # undo when 'z' is pressed
                     game_state.undo_move()
                     move_made = True
-                if e.key == p.K_r: #reset the board when r is pressed (resetting variable)
+                if e.key == p.K_r: # reset the board when r is pressed (resetting variable)
                     game_state = ChessEngine.GameState()
                     valid_moves = game_state.get_valid_moves()
                     sq_selected = ()
                     player_clicks = []
                     move_made = False
 
+        # AI move finder
+        if not game_over and human_vs_cpu and not is_human_turn:
+            ai_move = ChessAI.generate_random_move(valid_moves)
+            game_state.make_move(ai_move)
+            move_made = True
+
         if move_made:
             valid_moves = game_state.get_valid_moves()
             move_made = False
         draw_game_state(screen, game_state, valid_moves, sq_selected)
 
+        # declaring check/stalemate
         if game_state.check_mate:
             game_over = True
             if game_state.white_to_move:
