@@ -42,6 +42,7 @@ def main():
     sq_selected = ()
     #list that keeps track of player clicks (using two tuples for 1st and 2nd click coordinates : [(6,4), (5,4)])
     player_clicks = []
+    game_over = False
 
     running = True
     while running:
@@ -50,41 +51,58 @@ def main():
                 running = False
             #mouse handler
             elif e.type == p.MOUSEBUTTONDOWN:
-                location = p.mouse.get_pos() #returns (x,y) position of the mouse into a list
-                #for side panel make sure to keep track of the mouse location being relative to the new boundaries
+                if not game_over:
+                    location = p.mouse.get_pos() #returns (x,y) position of the mouse into a list
+                    #for side panel make sure to keep track of the mouse location being relative to the new boundaries
 
-                #column and row number
-                col = location[0]//SQUARE_SIZE
-                row = location[1]//SQUARE_SIZE
-                if sq_selected == (row,col): #if the user clicked same square twice
-                    sq_selected = () #deselect
-                    player_clicks = [] #clear player clicks
-                else:
-                    sq_selected = (row, col)
-                    player_clicks.append(sq_selected) #add both first and second clicks
+                    #column and row number
+                    col = location[0]//SQUARE_SIZE
+                    row = location[1]//SQUARE_SIZE
+                    if sq_selected == (row,col): #if the user clicked same square twice
+                        sq_selected = () #deselect
+                        player_clicks = [] #clear player clicks
+                    else:
+                        sq_selected = (row, col)
+                        player_clicks.append(sq_selected) #add both first and second clicks
 
-                if len(player_clicks) == 2: #if its the player's 2nd click, we need to move the piece
-                    move = ChessEngine.Move(player_clicks[0], player_clicks[1], game_state.board)
-                    print(move.get_chess_notation())
-                    for i in range(len(valid_moves)): #iterating through the valid moves to see if player's move is in it
-                        if move == valid_moves[i]:
-                            game_state.make_move(valid_moves[i])
-                            move_made = True
-                            sq_selected = ()  # reset user clicks
-                            player_clicks = []
-                    if not move_made:
-                        player_clicks = [sq_selected]
-
+                    if len(player_clicks) == 2: #if its the player's 2nd click, we need to move the piece
+                        move = ChessEngine.Move(player_clicks[0], player_clicks[1], game_state.board)
+                        print(move.get_chess_notation())
+                        for i in range(len(valid_moves)): #iterating through the valid moves to see if player's move is in it
+                            if move == valid_moves[i]:
+                                game_state.make_move(valid_moves[i])
+                                move_made = True
+                                sq_selected = ()  # reset user clicks
+                                player_clicks = []
+                        if not move_made:
+                            player_clicks = [sq_selected]
+            #key handlers
             elif e.type == p.KEYDOWN:
                 if e.key == p.K_z: #undo when 'z' is pressed
                     game_state.undo_move()
                     move_made = True
+                if e.key == p.K_r: #reset the board when r is pressed (resetting variable)
+                    game_state = ChessEngine.GameState()
+                    valid_moves = game_state.get_valid_moves()
+                    sq_selected = ()
+                    player_clicks = []
+                    move_made = False
 
         if move_made:
             valid_moves = game_state.get_valid_moves()
             move_made = False
-
         draw_game_state(screen, game_state, valid_moves, sq_selected)
+
+        if game_state.check_mate:
+            game_over = True
+            if game_state.white_to_move:
+                draw_text(screen, "CHECKMATE - BLACK WINS")
+            else:
+                draw_text(screen, "CHECKMATE - WHITE WINS")
+        elif game_state.stale_mate:
+            game_over = True
+            draw_text(screen, "STALEMATE - DRAW")
+
         clock.tick(MAX_FPS)
         p.display.flip()
     p.quit()
@@ -109,7 +127,12 @@ def highlight_square(screen, game_state, valid_moves, square_selected):
                     else: #if the square is empty
                         p.draw.circle(screen,'yellow', ((move.end_col * SQUARE_SIZE + 33), (move.end_row * SQUARE_SIZE + 33)), 10)
 
-
+#end game text
+def draw_text(screen, text):
+    font = p.font.SysFont("consolas", 35, True, False)
+    text_item = font.render(text, 0, p.Color('Dark Green'))
+    text_location = p.Rect(0,0,WIDTH,HEIGHT).move(WIDTH/2 - text_item.get_width()/2, HEIGHT/2.5 - text_item.get_height()/2.5)
+    screen.blit(text_item, text_location)
 
 #handles all graphics in the current game state
 def draw_game_state(screen, game_state, valid_moves, sq_selected):
