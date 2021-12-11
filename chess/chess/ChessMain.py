@@ -81,6 +81,18 @@ def main():
                                 if move == valid_moves[i]:
                                     game_state.make_move(valid_moves[i])
                                     move_made = True
+                                    # changing the value of the material score as pieces are captured
+                                    if game_state.capture != "**":
+                                        if not game_state.white_to_move and game_state.capture[0] == 'b': # if it's black's turn (white just played and captured a black piece)
+                                            game_state.black_material_score += int(game_state.piece_scores[game_state.capture[1]]) # subtracting the appropriate amount from black's material score
+                                            print("black score")
+                                            print(game_state.black_material_score)
+                                        elif game_state.white_to_move and game_state.capture[0] == 'w': # if it's white's turn (black just played and captured a white piece)
+                                            game_state.white_material_score -= int(game_state.piece_scores[game_state.capture[1]]) # subtracting the appropriate amount from black's material score
+                                            print("white score")
+                                            print(game_state.white_material_score)
+
+
                                     sq_selected = ()  # reset user clicks
                                     player_clicks = []
                             if not move_made:

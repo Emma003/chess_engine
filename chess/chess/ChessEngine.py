@@ -29,10 +29,15 @@ class GameState():
         self.black_king_location = (0,4)
         self.stale_mate = False
         self.check_mate = False
+        self.piece_scores = {'p':10, 'B':30, 'N':30, 'R':50, 'Q':90, 'K': 900} # stores the weight of each piece in a dictionary
+        self.white_material_score = 1290 # initial weighted sum of all white pieces (max player)
+        self.black_material_score = -1290 # initial weighted sum of all black pieces (min player)
+        self.capture = "**" # helper var that stores the value of the piece captured after every move (to calculate material score)
 
     # takes a move as parameter and executes it (doesn't work for castling, en-passant and pawn-promotion
     def make_move(self, move):
         self.board[move.start_row][move.start_col] = "**"
+        self.capture = move.piece_captured
         self.board[move.end_row][move.end_col] = move.piece_moved
         self.move_log.append(move) # records move so it can be undone
         self.white_to_move = not self.white_to_move # swaps players
