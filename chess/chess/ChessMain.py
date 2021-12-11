@@ -132,7 +132,7 @@ def main():
             move_made = True
 
         if not game_over and human_vs_cpu and player_difficult_ai:
-            ai_hard_move = ChessAI.minimax(game_state.board, 1, -1, 1, False, 'w')
+            ai_hard_move = ChessAI.minimax(game_state, 1, -9999, 9999, False, 'w', game_over)[0]
             game_state.make_move(ai_hard_move)
             move_made = True
 
