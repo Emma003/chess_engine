@@ -104,6 +104,20 @@ def main():
                 if e.key == p.K_z: # undo when 'z' is pressed
                     game_state.undo_move()
                     move_made = True
+                    # undoing the calculation on material score if there are moves in the log
+                    print(game_state.release)
+                    if len(game_state.move_log) != 0:
+                        if game_state.release != "**":
+                            if game_state.white_to_move and game_state.release[0] == 'b':  # if it's black's turn (white just played and captured a black piece)
+                                game_state.black_material_score -= int(game_state.piece_scores[game_state.release[1]])  # subtracting the appropriate amount from black's material score
+                                print("black score")
+                                print(game_state.black_material_score)
+                            elif not game_state.white_to_move and game_state.release[0] == 'w':  # if it's white's turn (black just played and captured a white piece)
+                                game_state.white_material_score += int(game_state.piece_scores[game_state.release[1]])  # subtracting the appropriate amount from black's material score
+                                print("white score")
+                                print(game_state.white_material_score)
+
+
                 if e.key == p.K_r: # reset the board when r is pressed (resetting variable)
                     game_state = ChessEngine.GameState()
                     valid_moves = game_state.get_valid_moves()
@@ -113,8 +127,13 @@ def main():
 
         # AI move finder
         if not game_over and human_vs_cpu and not is_human_turn:
-            ai_move = ChessAI.generate_random_move(valid_moves)
-            game_state.make_move(ai_move)
+            ai_easy_move = ChessAI.generate_random_move(valid_moves)
+            game_state.make_move(ai_easy_move)
+            move_made = True
+
+        if not game_over and human_vs_cpu and player_difficult_ai:
+            ai_hard_move = ChessAI.minimax(game_state.board, 1, -1, 1, False, 'w')
+            game_state.make_move(ai_hard_move)
             move_made = True
 
         if move_made:

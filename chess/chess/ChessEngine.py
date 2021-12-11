@@ -33,6 +33,7 @@ class GameState():
         self.white_material_score = 1290 # initial weighted sum of all white pieces (max player)
         self.black_material_score = -1290 # initial weighted sum of all black pieces (min player)
         self.capture = "**" # helper var that stores the value of the piece captured after every move (to calculate material score)
+        self.release = "**"  # helper var that stores the value of the piece released after every undo move (to calculate material score)
 
     # takes a move as parameter and executes it (doesn't work for castling, en-passant and pawn-promotion
     def make_move(self, move):
@@ -56,6 +57,7 @@ class GameState():
     def undo_move(self):
         if len(self.move_log) != 0: #makes sure the move log isn't empty
             move = self.move_log.pop() #.pop() returns the last item in the list AND removes it
+            self.release = move.piece_captured # stores the piece released from undoing the last move
             self.board[move.start_row][move.start_col] = move.piece_moved
             self.board[move.end_row][move.end_col] = move.piece_captured
             self.white_to_move = not self.white_to_move #switch turns back
