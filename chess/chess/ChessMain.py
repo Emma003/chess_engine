@@ -48,8 +48,11 @@ def main():
     human_vs_cpu = False # true when human vs ai mode, false when multiplayer mode
     player_human = True # true if human is playing white and ai is playing black
     player_ai = False # true if human is playing black and ai is playing white
-    easy_ai = False # true if human is playing white and easy ai is playing black
-    hard_ai = False # true if human is playing white and hard ai is playing black
+    easy_ai = False # random move ai
+    medium_ai = False # minimax with simple eval fct + depth of 1
+    hard_ai = False # minimax with complex eval fct + depth of 2
+    depth = 0 # number of branching in search tree
+    difficulty = 0 # medium_ai = 1, hard_ai = 2
 
     running = True
     while running:
@@ -89,12 +92,25 @@ def main():
                                 player_clicks = [sq_selected]
             # key handlers
             elif e.type == p.KEYDOWN:
-                if e.key == p.K_e: # press c to play vs computer
+                if e.key == p.K_e: # press c to play vs easy ai
                     human_vs_cpu = True
                     easy_ai = True
-                if e.key == p.K_h: # press c to play vs computer
+                    medium_ai = False
+                    hard_ai = False
+                if e.key == p.K_m: # press c to play vs medium ai
                     human_vs_cpu = True
+                    easy_ai = False
+                    medium_ai = True
+                    hard_ai = False
+                    depth = 1
+                    difficulty = 1
+                if e.key == p.K_h: # press c to play vs hard ai
+                    human_vs_cpu = True
+                    easy_ai = False
+                    medium_ai = False
                     hard_ai = True
+                    depth = 2
+                    difficulty = 2
                 if e.key == p.K_z: # undo when 'z' is pressed
                     game_state.undo_move()
                     move_made = True
@@ -105,25 +121,32 @@ def main():
                     player_clicks = []
                     move_made = False
 
-        #move generating ai
+        #move generating AIs
         if not game_over and human_vs_cpu and not is_human_turn:
             # random move generator
             if easy_ai:
                 ai_easy_move = ai.generate_random_move(valid_moves)
                 game_state.make_move(ai_easy_move)
-                move_made = True
-            # smart move generator (minimax w/ depth = 2)
+                print(ai_easy_move.get_chess_notation())
+            # smart move generator [difficulty = 1] (minimax w/ depth = 1 & simple evaluation fct)
+            if medium_ai:
+                ai_medium_move = ai.generate_smart_move(game_state, depth, difficulty)
+                game_state.make_move(ai_medium_move)
+                print(ai_medium_move.get_chess_notation())
+            # smart move generator [difficulty = 2] (minimax w/ depth = 2 & complex evaluation fct)
             if hard_ai:
-                ai_hard_move = ai.generate_smart_move(game_state, 2)
+                ai_hard_move = ai.generate_smart_move(game_state, depth, difficulty)
                 game_state.make_move(ai_hard_move)
-                move_made = True
+                print(ai_hard_move.get_chess_notation())
+            move_made = True
+
 
         if move_made:
             valid_moves = game_state.get_valid_moves()
             move_made = False
         draw_game_state(screen, game_state, valid_moves, sq_selected)
 
-        # declaring check/stalemate
+        # declaring and printing check/stalemate
         if game_state.check_mate:
             game_over = True
             if game_state.white_to_move:

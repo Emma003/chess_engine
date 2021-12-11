@@ -93,7 +93,7 @@ class AI():
 
     # returns material score + piece position scores
     def evaluate_complex(self, gs, board):
-        # declaring check/stalemate
+        # declaring check/stalemate (terminal state)
         if gs.check_mate:
             if gs.white_to_move:
                 return -9999  # min player (black) wins
@@ -102,6 +102,7 @@ class AI():
         elif gs.stale_mate:
             return 0
 
+        # stores piece position scores for each piece
         material_score = self.get_material_score(board)
         pawns = self.get_position_score(board, 'p',self.pawn_table)
         knights = self.get_position_score(board, 'N', self.knight_table)
@@ -112,6 +113,7 @@ class AI():
 
         eval_score = material_score + pawns + bishops + knights + rooks + queens + kings
 
+        # white is max / black is min
         if gs.white_to_move:
             return eval_score
         else:
@@ -126,9 +128,9 @@ class AI():
                 piece = board[r][c]
                 if piece != "**":
                     if piece[0] == 'w':
-                        white_material_score += self.piece_scores[piece[1]]  # adding the appropriate amount to white's material score
+                        white_material_score += self.piece_scores[piece[1]]  # using the value for the piece key
                     elif piece[0] == 'b':
-                        black_material_score += self.piece_scores[piece[1]] # adding the appropriate amount to black's material score
+                        black_material_score += self.piece_scores[piece[1]]
         return white_material_score - black_material_score
 
     # returns the piece position score: sum of w position score per piece - sum of b position score per piece
@@ -141,48 +143,50 @@ class AI():
                 if piece != "**":
                     if piece[1] == piece_type:
                         if piece[0] == 'w':
-                            white_position_score += table[r][c]  # adding the appropriate amount to white's material score
+                            white_position_score += table[r][c]  # using values in 2d array tables
                         elif piece[0] == 'b':
-                            black_position_score += table[7-r][c] # adding the appropriate amount to black's material score
+                            black_position_score += table[7-r][c]
         return white_position_score - black_position_score
 
     # returns smart move with depth 2
-    def generate_smart_move(self, gs, depth):
+    def generate_smart_move(self, gs, depth, difficulty):
         best_score = 9999
         valid_moves = gs.get_valid_moves()
         best_move = valid_moves[0]
         for move in valid_moves:
             gs.make_move(move)
-            current_eval = self.minimax(gs, depth, -9999, 9999, True)
+            current_eval = self.minimax(gs, depth, -9999, 9999, True, difficulty)
             gs.undo_move()
             if (current_eval < best_score):
                 best_score = current_eval
                 best_move = move
         return best_move
 
-
     # returns the best move and the min/max evaluation function score (uses AB-pruning)
-    def minimax(self, gs, depth, alpha, beta, max_player):
-        if depth == 0:
-            return self.evaluate_simple(gs, gs.board)
-
+    def minimax(self, gs, depth, alpha, beta, max_player, difficulty):
+        # using different evaluation functions depending on difficulty chosen by the user
+        if depth == 0: # base case
+            if difficulty == 1:
+                return self.evaluate_simple(gs, gs.board)
+            if difficulty == 2:
+                return self.evaluate_complex(gs, gs.board)
         valid_moves = gs.get_valid_moves()
-        best_move = valid_moves[0]
-        if max_player:
+
+        if max_player: # aims to maximize score
             max_eval = -9999
             for move in valid_moves:
                 gs.make_move(move)
-                max_eval = max(max_eval, self.minimax(gs, depth-1, alpha, beta, False))
+                max_eval = max(max_eval, self.minimax(gs, depth-1, alpha, beta, False, difficulty))
                 gs.undo_move()
                 alpha = max(alpha, max_eval)
                 if beta <= alpha:
                     break
             return max_eval
-        else:
+        else: # aims to minimize score
             min_eval = 9999
             for move in valid_moves:
                 gs.make_move(move)
-                min_eval = min(min_eval, self.minimax(gs, depth - 1, alpha, beta, True))
+                min_eval = min(min_eval, self.minimax(gs, depth - 1, alpha, beta, True, difficulty))
                 gs.undo_move()
                 beta = min(beta, min_eval)
                 if beta <= alpha:
