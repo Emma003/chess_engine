@@ -33,6 +33,7 @@ def main():
     clock = p.time.Clock()
     screen.fill(p.Color("white"))
     game_state = ChessEngine.GameState()
+    ai = ChessAI.AI()
 
     # storing valid moves in the current game state in a list
     valid_moves = game_state.get_valid_moves()
@@ -46,12 +47,13 @@ def main():
     game_over = False
     human_vs_cpu = False # true when human vs ai mode, false when multiplayer mode
     player_human = True # true if human is playing white and ai is playing black
-    player_easy_ai = False # true if human is playing black and easy ai is playing white
-    player_difficult_ai = False # true if human is playing black and difficult ai is playing white
+    player_ai = False # true if human is playing black and ai is playing white
+    easy_ai = False # true if human is playing white and easy ai is playing black
+    hard_ai = False # true if human is playing white and hard ai is playing black
 
     running = True
     while running:
-        is_human_turn = (game_state.white_to_move and player_human) or (not game_state.white_to_move and player_easy_ai) # true if its white's turn to move AND human is white
+        is_human_turn = (game_state.white_to_move and player_human) or (not game_state.white_to_move and player_ai) # true if its white's turn to move AND human is white
         # OR if its black's turn to play and human is black
 
         for e in p.event.get():
@@ -81,43 +83,21 @@ def main():
                                 if move == valid_moves[i]:
                                     game_state.make_move(valid_moves[i])
                                     move_made = True
-                                    # changing the value of the material score as pieces are captured
-                                    if game_state.capture != "**":
-                                        if not game_state.white_to_move and game_state.capture[0] == 'b': # if it's black's turn (white just played and captured a black piece)
-                                            game_state.black_material_score += int(game_state.piece_scores[game_state.capture[1]]) # subtracting the appropriate amount from black's material score
-                                            print("black score")
-                                            print(game_state.black_material_score)
-                                        elif game_state.white_to_move and game_state.capture[0] == 'w': # if it's white's turn (black just played and captured a white piece)
-                                            game_state.white_material_score -= int(game_state.piece_scores[game_state.capture[1]]) # subtracting the appropriate amount from black's material score
-                                            print("white score")
-                                            print(game_state.white_material_score)
-
-
                                     sq_selected = ()  # reset user clicks
                                     player_clicks = []
                             if not move_made:
                                 player_clicks = [sq_selected]
             # key handlers
             elif e.type == p.KEYDOWN:
-                if e.key == p.K_c: # press c to play vs computer
+                if e.key == p.K_e: # press c to play vs computer
                     human_vs_cpu = True
+                    easy_ai = True
+                if e.key == p.K_h: # press c to play vs computer
+                    human_vs_cpu = True
+                    hard_ai = True
                 if e.key == p.K_z: # undo when 'z' is pressed
                     game_state.undo_move()
                     move_made = True
-                    # undoing the calculation on material score if there are moves in the log
-                    print(game_state.release)
-                    if len(game_state.move_log) != 0:
-                        if game_state.release != "**":
-                            if game_state.white_to_move and game_state.release[0] == 'b':  # if it's black's turn (white just played and captured a black piece)
-                                game_state.black_material_score -= int(game_state.piece_scores[game_state.release[1]])  # subtracting the appropriate amount from black's material score
-                                print("black score")
-                                print(game_state.black_material_score)
-                            elif not game_state.white_to_move and game_state.release[0] == 'w':  # if it's white's turn (black just played and captured a white piece)
-                                game_state.white_material_score += int(game_state.piece_scores[game_state.release[1]])  # subtracting the appropriate amount from black's material score
-                                print("white score")
-                                print(game_state.white_material_score)
-
-
                 if e.key == p.K_r: # reset the board when r is pressed (resetting variable)
                     game_state = ChessEngine.GameState()
                     valid_moves = game_state.get_valid_moves()
@@ -125,16 +105,18 @@ def main():
                     player_clicks = []
                     move_made = False
 
-        # AI move finder
+        #move generating ai
         if not game_over and human_vs_cpu and not is_human_turn:
-            ai_easy_move = ChessAI.generate_random_move(valid_moves)
-            game_state.make_move(ai_easy_move)
-            move_made = True
-
-        if not game_over and human_vs_cpu and player_difficult_ai:
-            ai_hard_move = ChessAI.minimax(game_state, 1, -9999, 9999, False, 'w', game_over)[0]
-            game_state.make_move(ai_hard_move)
-            move_made = True
+            # random move generator
+            if easy_ai:
+                ai_easy_move = ai.generate_random_move(valid_moves)
+                game_state.make_move(ai_easy_move)
+                move_made = True
+            # smart move generator (minimax w/ depth = 2)
+            if hard_ai:
+                ai_hard_move = ai.generate_smart_move(game_state, 2)
+                game_state.make_move(ai_hard_move)
+                move_made = True
 
         if move_made:
             valid_moves = game_state.get_valid_moves()
@@ -179,7 +161,7 @@ def highlight_square(screen, game_state, valid_moves, square_selected):
 #end game text
 def draw_text(screen, text):
     font = p.font.SysFont("consolas", 35, True, False)
-    text_item = font.render(text, 0, p.Color('Dark Green'))
+    text_item = font.render(text, True, p.Color('Dark Green'))
     text_location = p.Rect(0,0,WIDTH,HEIGHT).move(WIDTH/2 - text_item.get_width()/2, HEIGHT/2.5 - text_item.get_height()/2.5)
     screen.blit(text_item, text_location)
 

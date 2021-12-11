@@ -29,39 +29,29 @@ class GameState():
         self.black_king_location = (0,4)
         self.stale_mate = False
         self.check_mate = False
-        self.piece_scores = {'p':10, 'B':30, 'N':30, 'R':50, 'Q':90, 'K': 900} # stores the weight of each piece in a dictionary
-        self.white_material_score = 1290 # initial weighted sum of all white pieces (max player)
-        self.black_material_score = -1290 # initial weighted sum of all black pieces (min player)
-        self.capture = "**" # helper var that stores the value of the piece captured after every move (to calculate material score)
-        self.release = "**"  # helper var that stores the value of the piece released after every undo move (to calculate material score)
 
     # takes a move as parameter and executes it (doesn't work for castling, en-passant and pawn-promotion
     def make_move(self, move):
         self.board[move.start_row][move.start_col] = "**"
-        self.capture = move.piece_captured
         self.board[move.end_row][move.end_col] = move.piece_moved
         self.move_log.append(move) # records move so it can be undone
         self.white_to_move = not self.white_to_move # swaps players
-
         #updating the king's location to check for checkmate
         if move.piece_moved == 'wK':
             self.white_king_location = (move.end_row, move.end_col)
         elif move.piece_moved == 'bK':
             self.black_king_location = (move.end_row), (move.end_col)
-
-        #checking for pawn promotion
+        #checking for pawn promotion (only queen for now)
         if move.is_pawn_promotion:
             self.board[move.end_row][move.end_col] = move.piece_moved[0] + 'Q'
 
-    #undoes last move
+    # undoes last move
     def undo_move(self):
         if len(self.move_log) != 0: #makes sure the move log isn't empty
             move = self.move_log.pop() #.pop() returns the last item in the list AND removes it
-            self.release = move.piece_captured # stores the piece released from undoing the last move
             self.board[move.start_row][move.start_col] = move.piece_moved
             self.board[move.end_row][move.end_col] = move.piece_captured
             self.white_to_move = not self.white_to_move #switch turns back
-
             # updating the king's location
             if move.piece_moved == 'wK':
                 self.white_king_location = (move.start_row, move.start_col)
@@ -172,7 +162,6 @@ class GameState():
                     moves.append(Move((r, c), (r + 1, c - 1), self.board))
 
     # get all possible moves for the rook located at r and c and add them to the list
-    #IMPROVE DESIGN WHEN YOU CAN (MAYBE CREATE A SINGLE FUNCTION THAT GETS PASSED A LIST OF DIRECTIONS DEPENDING ON THE PIECE)
     def get_rook_moves(self, r, c, moves):
         if self.white_to_move:
             friend = 'w'

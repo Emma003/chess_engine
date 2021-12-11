@@ -79,11 +79,29 @@ class AI():
         return valid_moves[random.randint(0, len(valid_moves) - 1)]
 
     # returns only material score
-    def evaluate_simple(self, board):
+    def evaluate_simple(self, gs, board):
+        # declaring check/stalemate
+        if gs.check_mate:
+            if gs.white_to_move:
+                return -9999 #min player (black) wins
+            else:
+                return 9999 # max player (white) wins
+        elif gs.stale_mate:
+            return 0
+
         return self.get_material_score(board)
 
     # returns material score + piece position scores
-    def evaluate_complex(self, board):
+    def evaluate_complex(self, gs, board):
+        # declaring check/stalemate
+        if gs.check_mate:
+            if gs.white_to_move:
+                return -9999  # min player (black) wins
+            else:
+                return 9999  # max player (white) wins
+        elif gs.stale_mate:
+            return 0
+
         material_score = self.get_material_score(board)
         pawns = self.get_position_score(board, 'p',self.pawn_table)
         knights = self.get_position_score(board, 'N', self.knight_table)
@@ -92,7 +110,12 @@ class AI():
         queens = self.get_position_score(board, 'Q', self.queen_table)
         kings = self.get_position_score(board, 'K', self.king_table)
 
-        return material_score + pawns + bishops + knights + rooks + queens + kings
+        eval_score = material_score + pawns + bishops + knights + rooks + queens + kings
+
+        if gs.white_to_move:
+            return eval_score
+        else:
+            return -eval_score
 
     # returns the material score: weighted sum of w pieces on board - weighted sum of b pieces on board
     def get_material_score (self, board):
@@ -109,7 +132,7 @@ class AI():
         return white_material_score - black_material_score
 
     # returns the piece position score: sum of w position score per piece - sum of b position score per piece
-    def get_position_score (self,board, piece_type, table):
+    def get_position_score (self, board, piece_type, table):
         white_position_score = 0
         black_position_score = 0
         for r in range (0, 1, 8):
@@ -123,37 +146,45 @@ class AI():
                             black_position_score += table[7-r][c] # adding the appropriate amount to black's material score
         return white_position_score - black_position_score
 
+    # returns smart move with depth 2
+    def generate_smart_move(self, gs, depth):
+        best_score = 9999
+        valid_moves = gs.get_valid_moves()
+        best_move = valid_moves[0]
+        for move in valid_moves:
+            gs.make_move(move)
+            current_eval = self.minimax(gs, depth, -9999, 9999, True)
+            gs.undo_move()
+            if (current_eval < best_score):
+                best_score = current_eval
+                best_move = move
+        return best_move
 
-    def minimax(self, gs, depth, alpha, beta, max_player, max_color, game_over):
-        if depth == 0 or game_over:
-            return None, evaluate_simple(gs, max_color)
+
+    # returns the best move and the min/max evaluation function score (uses AB-pruning)
+    def minimax(self, gs, depth, alpha, beta, max_player):
+        if depth == 0:
+            return self.evaluate_simple(gs, gs.board)
 
         valid_moves = gs.get_valid_moves()
         best_move = valid_moves[0]
-
         if max_player:
             max_eval = -9999
             for move in valid_moves:
                 gs.make_move(move)
-                current_eval = minimax(gs, depth -1, alpha, beta, False, max_color, game_over)[1]
+                max_eval = max(max_eval, self.minimax(gs, depth-1, alpha, beta, False))
                 gs.undo_move()
-                if current_eval > max_eval:
-                    max_eval = current_eval
-                    best_move = move
-                alpha = max(alpha, current_eval)
+                alpha = max(alpha, max_eval)
                 if beta <= alpha:
                     break
-            return [best_move,max_eval]
+            return max_eval
         else:
             min_eval = 9999
             for move in valid_moves:
                 gs.make_move(move)
-                current_eval = minimax(gs, depth - 1, alpha, beta, True, max_color, game_over)[1]
+                min_eval = min(min_eval, self.minimax(gs, depth - 1, alpha, beta, True))
                 gs.undo_move()
-                if current_eval < min_eval:
-                    min_eval = current_eval
-                    best_move = move
-                beta = min(beta, current_eval)
+                beta = min(beta, min_eval)
                 if beta <= alpha:
                     break
-            return [best_move, min_eval]
+            return min_eval
